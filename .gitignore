@@ -48,3 +48,4 @@ DESIGN.md
 PLAN.md
 
 .vercel
+.env*.local

@@ -1,0 +1,179 @@
+{
+  "name": "Apex — AI Project Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apex-ai-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: Client Chat",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "apex-ai-chat"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst message = body.message ?? '';\nconst sessionId = body.sessionId ?? 'default';\nconst clientName = body.clientName ?? 'Client';\nconst projectAddress = body.projectAddress ?? 'your project';\n\nif (!message || message.trim().length === 0) {\n  throw new Error('Message is required');\n}\n\nreturn [{\n  json: {\n    message: message.trim(),\n    sessionId,\n    clientName,\n    projectAddress\n  }\n}];"
+      },
+      "id": "parse-message",
+      "name": "Parse & Validate Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "systemMessage": "You are Apex AI, the intelligent project assistant for Apex Builders — a premium construction and renovation company.\n\nYou have full knowledge of the following active client project:\n\n**Client:** Sarah Jenkins\n**Project:** Kitchen Renovation at 124 Maple Drive\n**Status:** In Progress (Electrical Phase)\n**Project Start:** March 1, 2024\n**Estimated Completion:** October 15, 2024\n**Total Budget:** $190,000\n**Amount Spent:** $124,500 (65% paid)\n**Project Manager:** James Carter (james@apexbuilders.com)\n\n**Project Phases:**\n- ✅ Design Phase — Completed March 15\n- ✅ Foundation — Completed April 2\n- ⚡ Electrical — IN PROGRESS (80% complete, Mike Rodriguez assigned)\n- 🔲 Finishing & Paint — Pending\n\n**Assigned Technician:** Mike Rodriguez (Electrician)\n- Current task: Main breaker panel installed & inspected. Kitchen island wiring 80% complete.\n- Last update: 2 hours ago\n\n**Recent Invoices:**\n- #004 — Wiring Phase 1: $5,000 (paid, May 10)\n- #003 — Concrete Slab: $12,000 (paid, Apr 12)\n- #002 — Design & Permits: $8,500 (paid, Jan 20)\n- #001 — Foundation Work: $32,000 (paid, Mar 5)\n- #005 — Electrical Phase: $15,000 (PENDING — due June 1)\n\n**Documents available:** 2nd Floor Blueprints v2, Electrical Permits, Material Spec Sheet\n\n**Your role:**\n- Answer questions about project status, timelines, invoices, team members\n- Be warm, professional, and reassuring\n- Give specific, accurate answers based on the project data above\n- If asked something outside your knowledge, offer to connect them with James Carter\n- Keep responses concise (2-4 sentences) unless detail is requested\n- Never make up information not listed above"
+        }
+      },
+      "id": "openai-chat",
+      "name": "GPT-4o: Generate Response",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [700, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are Apex AI, the intelligent project assistant for Apex Builders — a premium construction and renovation company.\n\nYou have full knowledge of the following active client project:\n\n**Client:** Sarah Jenkins\n**Project:** Kitchen Renovation at 124 Maple Drive\n**Status:** In Progress (Electrical Phase)\n**Project Start:** March 1, 2024\n**Estimated Completion:** October 15, 2024\n**Total Budget:** $190,000\n**Amount Spent:** $124,500 (65% paid)\n**Project Manager:** James Carter (james@apexbuilders.com)\n\n**Project Phases:**\n- ✅ Design Phase — Completed March 15\n- ✅ Foundation — Completed April 2\n- ⚡ Electrical — IN PROGRESS (80% complete, Mike Rodriguez assigned)\n- 🔲 Finishing & Paint — Pending\n\n**Assigned Technician:** Mike Rodriguez (Electrician)\n- Current task: Main breaker panel installed & inspected. Kitchen island wiring 80% complete.\n- Last update: 2 hours ago\n\n**Recent Invoices:**\n- #004 — Wiring Phase 1: $5,000 (paid, May 10)\n- #003 — Concrete Slab: $12,000 (paid, Apr 12)\n- #002 — Design & Permits: $8,500 (paid, Jan 20)\n- #001 — Foundation Work: $32,000 (paid, Mar 5)\n- #005 — Electrical Phase: $15,000 (PENDING — due June 1)\n\n**Documents available:** 2nd Floor Blueprints v2, Electrical Permits, Material Spec Sheet\n\n**Your role:**\n- Answer questions about project status, timelines, invoices, team members\n- Be warm, professional, and reassuring\n- Give specific, accurate answers based on the project data above\n- If asked something outside your knowledge, offer to connect them with James Carter\n- Keep responses concise (2-4 sentences) unless detail is requested\n- Never make up information not listed above"
+        }
+      },
+      "id": "ai-agent",
+      "name": "Apex AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $input.first().json.output ?? $input.first().json.text ?? $input.first().json.response ?? '';\n\nreturn [{\n  json: {\n    reply: agentOutput,\n    timestamp: new Date().toISOString(),\n    success: true\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response",
+      "name": "Send Reply to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1160, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": false, \"reply\": \"I'm having trouble processing your request. Please try again.\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "error-response",
+      "name": "Send Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [700, 480]
+    }
+  ],
+  "connections": {
+    "Webhook: Client Chat": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Message": {
+      "main": [
+        [
+          {
+            "node": "Apex AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apex AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Send Reply to Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o: Generate Response": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Apex AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "meta": {
+    "templateId": "apex-ai-project-assistant",
+    "instanceId": "apex-builders"
+  },
+  "tags": ["apex-builders", "ai-chat", "client-portal"]
+}

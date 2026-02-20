@@ -1,0 +1,82 @@
+{
+  "name": "Apex — Job Status Update Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apex-job-update",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: Job Status Update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "apex-job-update"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst required = ['projectId', 'newStatus', 'clientEmail', 'clientName', 'projectTitle', 'techName'];\nfor (const field of required) {\n  if (!body[field]) throw new Error(`Missing required field: ${field}`);\n}\n\nconst statusLabels = {\n  scheduled: '📅 Scheduled',\n  in_progress: '⚡ In Progress',\n  completed: '✅ Completed',\n  invoiced: '🧾 Invoiced'\n};\n\nreturn [{\n  json: {\n    projectId: body.projectId,\n    newStatus: body.newStatus,\n    statusLabel: statusLabels[body.newStatus] ?? body.newStatus,\n    clientEmail: body.clientEmail,\n    clientName: body.clientName,\n    projectTitle: body.projectTitle,\n    techName: body.techName,\n    notes: body.notes ?? '',\n    updatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate-update",
+      "name": "Validate Update Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.clientEmail }}",
+        "subject": "{{ $json.statusLabel }} — Update on your {{ $json.projectTitle }}",
+        "message": "<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;\">\n  <div style=\"background: #13151A; border-radius: 16px; padding: 32px; color: white;\">\n    <div style=\"text-align: center; margin-bottom: 24px;\">\n      <h1 style=\"color: #0df2f2; font-size: 28px; margin: 0;\">{{ $json.statusLabel }}</h1>\n      <p style=\"color: #9ca3af; margin-top: 8px;\">Project Update from Apex Builders</p>\n    </div>\n    \n    <p style=\"color: #e5e7eb;\">Hi {{ $json.clientName }},</p>\n    <p style=\"color: #9ca3af;\">There's a new update on your project. Here's what's happening:</p>\n    \n    <div style=\"background: #1e2128; border-radius: 12px; padding: 24px; margin: 20px 0; border-left: 3px solid #0df2f2;\">\n      <table style=\"width: 100%;\">\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0; width: 40%;\">Project</td>\n          <td style=\"color: white; font-weight: bold;\">{{ $json.projectTitle }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">New Status</td>\n          <td style=\"color: #0df2f2; font-weight: bold;\">{{ $json.statusLabel }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Assigned Tech</td>\n          <td style=\"color: white;\">{{ $json.techName }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Updated</td>\n          <td style=\"color: white;\">{{ $json.updatedAt }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    {{ $json.notes ? `<div style=\"background: #1e2128; border-radius: 12px; padding: 20px; margin: 16px 0;\"><p style=\"color: #9ca3af; margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;\">Notes from your technician</p><p style=\"color: white; margin: 0;\">${$json.notes}</p></div>` : '' }}\n    \n    <div style=\"text-align: center; margin-top: 24px;\">\n      <a href=\"https://apex-builders-portal-nu.vercel.app/client/dashboard\" style=\"background: #0df2f2; color: #13151A; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;\">View Your Project →</a>\n    </div>\n    \n    <p style=\"color: #4b5563; text-align: center; font-size: 12px; margin-top: 24px;\">Questions? Reply to this email or contact your project manager.</p>\n  </div>\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-client",
+      "name": "Email Client: Status Update",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [700, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Client notified successfully\"}",
+        "options": {
+          "responseHeaders": {
+            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+          }
+        }
+      },
+      "id": "success-response",
+      "name": "Send Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: Job Status Update": {
+      "main": [[{ "node": "Validate Update Data", "type": "main", "index": 0 }]]
+    },
+    "Validate Update Data": {
+      "main": [[{ "node": "Email Client: Status Update", "type": "main", "index": 0 }]]
+    },
+    "Email Client: Status Update": {
+      "main": [[{ "node": "Send Success Response", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": ["apex-builders", "notifications", "job-updates"]
+}

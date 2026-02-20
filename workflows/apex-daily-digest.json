@@ -1,0 +1,113 @@
+{
+  "name": "Apex — Daily Admin Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule: 8 AM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM projects WHERE status = 'in_progress') AS active_jobs,\n  (SELECT COUNT(*) FROM projects WHERE status = 'new') AS new_requests,\n  (SELECT COUNT(*) FROM invoices WHERE status = 'pending') AS pending_invoices,\n  (SELECT COUNT(*) FROM invoices WHERE status = 'overdue') AS overdue_invoices,\n  (SELECT COUNT(*) FROM leads WHERE created_at > NOW() - INTERVAL '24 hours') AS new_leads,\n  (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE status = 'paid' AND created_at > NOW() - INTERVAL '30 days') AS revenue_30d;",
+        "options": {}
+      },
+      "id": "supabase-stats",
+      "name": "Query: Business Stats",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT p.title, p.status, p.priority, pr.full_name AS tech_name, p.end_date\nFROM projects p\nLEFT JOIN profiles pr ON pr.id = p.assigned_tech_id\nWHERE p.status IN ('in_progress', 'scheduled')\nORDER BY p.end_date ASC NULLS LAST\nLIMIT 10;",
+        "options": {}
+      },
+      "id": "supabase-jobs",
+      "name": "Query: Active Jobs",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 460],
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stats = $('Query: Business Stats').first().json;\nconst jobs = $('Query: Active Jobs').all();\n\nconst jobRows = jobs.map(j => {\n  const job = j.json;\n  const priority = job.priority === 'urgent' ? '🔴' : job.priority === 'high' ? '🟠' : '🟢';\n  const dueDate = job.end_date ? new Date(job.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD';\n  return `<tr>\n    <td style=\"padding: 10px; color: white; border-bottom: 1px solid #374151;\">${priority} ${job.title}</td>\n    <td style=\"padding: 10px; color: #9ca3af; border-bottom: 1px solid #374151;\">${job.tech_name ?? 'Unassigned'}</td>\n    <td style=\"padding: 10px; color: #9ca3af; border-bottom: 1px solid #374151; text-transform: capitalize;\">${job.status.replace('_', ' ')}</td>\n    <td style=\"padding: 10px; color: #0df2f2; border-bottom: 1px solid #374151;\">${dueDate}</td>\n  </tr>`;\n}).join('');\n\nconst today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });\n\nreturn [{ json: { stats, jobRows, today } }];"
+      },
+      "id": "build-email",
+      "name": "Build Digest HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 380]
+    },
+    {
+      "parameters": {
+        "sendTo": "james@apexbuilders.com",
+        "subject": "📊 Apex Daily Digest — {{ $json.today }}",
+        "message": "<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background: #f5f5f5;\">\n  <div style=\"background: #13151A; border-radius: 16px; padding: 32px; color: white;\">\n    <div style=\"margin-bottom: 28px;\">\n      <h1 style=\"color: white; font-size: 22px; margin: 0;\">📊 Daily Digest</h1>\n      <p style=\"color: #9ca3af; margin-top: 4px;\">{{ $json.today }}</p>\n    </div>\n    \n    <div style=\"display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 28px;\">\n      <div style=\"background: #1e2128; border-radius: 12px; padding: 16px; text-align: center;\">\n        <div style=\"font-size: 28px; font-weight: bold; color: #0df2f2;\">{{ $json.stats.active_jobs }}</div>\n        <div style=\"color: #9ca3af; font-size: 12px; margin-top: 4px;\">Active Jobs</div>\n      </div>\n      <div style=\"background: #1e2128; border-radius: 12px; padding: 16px; text-align: center;\">\n        <div style=\"font-size: 28px; font-weight: bold; color: #f97316;\">{{ $json.stats.new_requests }}</div>\n        <div style=\"color: #9ca3af; font-size: 12px; margin-top: 4px;\">New Requests</div>\n      </div>\n      <div style=\"background: #1e2128; border-radius: 12px; padding: 16px; text-align: center;\">\n        <div style=\"font-size: 28px; font-weight: bold; color: #22c55e;\">${{ $json.stats.revenue_30d }}</div>\n        <div style=\"color: #9ca3af; font-size: 12px; margin-top: 4px;\">Revenue (30d)</div>\n      </div>\n    </div>\n    \n    {{ ($json.stats.new_leads > 0) ? `<div style=\"background: #0df2f2/10; border: 1px solid #0df2f2; border-radius: 10px; padding: 14px; margin-bottom: 20px;\"><p style=\"color: #0df2f2; margin: 0; font-weight: bold;\">🔔 ${$json.stats.new_leads} new lead(s) submitted in the last 24 hours!</p></div>` : '' }}\n    \n    {{ ($json.stats.overdue_invoices > 0) ? `<div style=\"background: #ef4444/10; border: 1px solid #ef4444; border-radius: 10px; padding: 14px; margin-bottom: 20px;\"><p style=\"color: #ef4444; margin: 0; font-weight: bold;\">⚠️ ${$json.stats.overdue_invoices} overdue invoice(s) require attention.</p></div>` : '' }}\n    \n    <div style=\"background: #1e2128; border-radius: 12px; overflow: hidden;\">\n      <div style=\"padding: 16px; border-bottom: 1px solid #374151;\">\n        <h3 style=\"color: white; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;\">Active & Scheduled Jobs</h3>\n      </div>\n      <table style=\"width: 100%; border-collapse: collapse;\">\n        <thead>\n          <tr style=\"background: #0d0f14;\">\n            <th style=\"padding: 10px; color: #9ca3af; text-align: left; font-size: 11px; text-transform: uppercase;\">Job</th>\n            <th style=\"padding: 10px; color: #9ca3af; text-align: left; font-size: 11px; text-transform: uppercase;\">Tech</th>\n            <th style=\"padding: 10px; color: #9ca3af; text-align: left; font-size: 11px; text-transform: uppercase;\">Status</th>\n            <th style=\"padding: 10px; color: #9ca3af; text-align: left; font-size: 11px; text-transform: uppercase;\">Due</th>\n          </tr>\n        </thead>\n        <tbody>{{ $json.jobRows }}</tbody>\n      </table>\n    </div>\n    \n    <div style=\"text-align: center; margin-top: 24px;\">\n      <a href=\"https://apex-builders-portal-nu.vercel.app/admin/dashboard\" style=\"background: #0df2f2; color: #13151A; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;\">Open Dashboard →</a>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-digest",
+      "name": "Email Admin: Daily Digest",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [940, 380],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule: 8 AM Daily": {
+      "main": [
+        [
+          { "node": "Query: Business Stats", "type": "main", "index": 0 },
+          { "node": "Query: Active Jobs", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Query: Business Stats": {
+      "main": [[{ "node": "Build Digest HTML", "type": "main", "index": 0 }]]
+    },
+    "Query: Active Jobs": {
+      "main": [[{ "node": "Build Digest HTML", "type": "main", "index": 0 }]]
+    },
+    "Build Digest HTML": {
+      "main": [[{ "node": "Email Admin: Daily Digest", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": ["apex-builders", "scheduled", "digest"]
+}
