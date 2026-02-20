@@ -64,7 +64,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 }
 
 export async function getAllProjects(): Promise<ProjectWithRelations[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("projects")
