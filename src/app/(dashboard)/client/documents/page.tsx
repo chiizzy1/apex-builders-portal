@@ -1,6 +1,7 @@
 import React from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FloatingCard } from "@/components/ui/FloatingCard";
+import { PillButton } from "@/components/ui/PillButton";
 
 export default function ClientDocumentsPage() {
   const documents = [
@@ -13,12 +14,11 @@ export default function ClientDocumentsPage() {
 
   return (
     <div className="flex-1 w-full max-w-[1280px] mx-auto px-4 lg:px-8 py-8">
-      <PageHeader
-        title="Project Documents"
-        subtitle="View and download important files related to your build."
-        actionLabel="Upload File"
-        actionIcon="upload"
-      />
+      <PageHeader title="Project Documents" subtitle="View and download important files related to your build.">
+        <PillButton icon="upload" variant="primary">
+          Upload File
+        </PillButton>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {documents.map((doc, idx) => (
