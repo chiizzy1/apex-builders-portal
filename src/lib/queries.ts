@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type {
   Profile,
   Project,
@@ -19,12 +20,21 @@ import type {
   TechDashboardData,
 } from "@/lib/types";
 
+// Server-side admin client that bypasses RLS (uses service role key).
+// Only safe to use in Server Components / API routes — never exposed to the browser.
+function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
 // ============================================================
 // ADMIN QUERIES
 // ============================================================
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ count: activeProjects }, { count: newRequests }, { count: activeTechs }, invoicesResult] = await Promise.all([
     supabase.from("projects").select("*", { count: "exact", head: true }).eq("status", "in_progress"),
