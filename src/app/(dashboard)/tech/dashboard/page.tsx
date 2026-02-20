@@ -5,7 +5,6 @@ import {
   CheckCircle,
   TrendingUp,
   MapPin,
-  ArrowRight,
   ChevronRight,
   QrCode,
   Search,
@@ -14,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { JobActionCard } from "@/components/tech/JobActionCard";
 
 // Demo tech UUID — replaced with session user ID once auth is wired
 const DEMO_TECH_ID = "c26995ea-07f9-4f14-8619-d25f352a3165";
@@ -236,10 +236,7 @@ export default async function TechnicianDashboard() {
                   </div>
                 </div>
               </div>
-              <button className="w-full md:w-auto px-10 py-4 bg-linear-to-r from-primary to-orange-500 hover:to-orange-400 text-white font-bold text-lg rounded-full shadow-glow-primary transform transition-all active:scale-95 flex items-center justify-center gap-3 group/btn">
-                <span>COMPLETE JOB</span>
-                <ArrowRight className="h-6 w-6 group-hover/btn:translate-x-1 transition-transform" />
-              </button>
+              <JobActionCard job={heroJob} />
             </div>
           </div>
         </div>
