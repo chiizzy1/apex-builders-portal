@@ -1,28 +1,23 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Building2, Mail, Lock, EyeOff, ArrowRight } from "lucide-react";
-import Image from "next/image";
+import { Mail, Lock, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
+import { Suspense } from "react";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [role, setRole] = useState("admin");
+  return (
+    <Suspense>
+      <LoginFormInner />
+    </Suspense>
+  );
+}
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (role === "client") {
-      router.push("/client/dashboard");
-    } else if (role === "tech") {
-      router.push("/tech/dashboard");
-    } else {
-      router.push("/admin/dashboard");
-    }
-  };
+function LoginFormInner() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
   return (
     <div className="flex min-h-screen w-full bg-background overflow-hidden relative">
@@ -38,7 +33,6 @@ export default function LoginPage() {
             backgroundPosition: "center",
           }}
         >
-          {/* Overlay Gradient to blend image into brand colors */}
           <div className="absolute inset-0 bg-linear-to-br from-slate-deep/90 via-slate-deep/80 to-primary/10 mix-blend-overlay"></div>
           <div className="absolute inset-0 bg-slate-deep/60"></div>
         </div>
@@ -47,7 +41,6 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-full h-full pointer-events-none overflow-hidden z-10">
           <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] border border-accent-cyan/20 rounded-full blur-[100px]"></div>
           <div className="absolute bottom-[20%] left-[10%] w-[300px] h-[300px] border border-primary/20 rounded-full blur-[80px]"></div>
-          {/* SVG Pattern Overlay simulated with borders */}
           <div className="absolute top-0 left-1/2 w-px h-full bg-linear-to-b from-transparent via-accent-cyan/20 to-transparent transform -skew-x-12"></div>
           <div className="absolute top-0 left-1/3 w-px h-full bg-linear-to-b from-transparent via-primary/20 to-transparent transform -skew-x-12"></div>
         </div>
@@ -68,7 +61,6 @@ export default function LoginPage() {
 
           <div className="mt-8 flex items-center gap-4">
             <div className="flex -space-x-3">
-              {/* Using native img tags for external avatars to avoid domain config issues in Next.js */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="User Avatar 1"
@@ -103,14 +95,13 @@ export default function LoginPage() {
 
       {/* RIGHT SIDE: Login Form (45%) */}
       <div className="w-full md:w-[45%] bg-slate-deep flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
-        {/* Mobile Logo (Visible only on small screens) */}
+        {/* Mobile Logo */}
         <div className="md:hidden absolute top-6 left-6 flex items-center gap-2 mb-8">
           <Logo />
         </div>
 
         {/* Card Container */}
         <div className="w-full max-w-[480px] bg-slate-lighter rounded-[24px] shadow-card p-8 md:p-10 border border-white/5 backdrop-blur-sm relative overflow-hidden group">
-          {/* Subtle top highlight for 3D effect */}
           <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
 
           {/* Header */}
@@ -119,58 +110,15 @@ export default function LoginPage() {
             <p className="text-slate-400 font-medium">Sign in to access your portal</p>
           </div>
 
-          {/* Role Toggle */}
-          <div className="bg-slate-deep p-1.5 rounded-full flex mb-8 border border-white/5 relative">
-            <input
-              checked={role === "admin"}
-              onChange={() => setRole("admin")}
-              className="peer/admin hidden"
-              id="role-admin"
-              name="role"
-              type="radio"
-              value="admin"
-            />
-            <input
-              checked={role === "tech"}
-              onChange={() => setRole("tech")}
-              className="peer/tech hidden"
-              id="role-tech"
-              name="role"
-              type="radio"
-              value="tech"
-            />
-            <input
-              checked={role === "client"}
-              onChange={() => setRole("client")}
-              className="peer/client hidden"
-              id="role-client"
-              name="role"
-              type="radio"
-              value="client"
-            />
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6">
+              <p className="text-red-400 text-sm font-medium text-center">{error}</p>
+            </div>
+          )}
 
-            <label
-              className="flex-1 text-center py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-300 text-slate-400 hover:text-white peer-checked/admin:bg-slate-lighter peer-checked/admin:text-white peer-checked/admin:shadow-lg peer-checked/admin:ring-1 peer-checked/admin:ring-white/10"
-              htmlFor="role-admin"
-            >
-              Admin
-            </label>
-            <label
-              className="flex-1 text-center py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-300 text-slate-400 hover:text-white peer-checked/tech:bg-slate-lighter peer-checked/tech:text-white peer-checked/tech:shadow-lg peer-checked/tech:ring-1 peer-checked/tech:ring-white/10"
-              htmlFor="role-tech"
-            >
-              Technician
-            </label>
-            <label
-              className="flex-1 text-center py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-300 text-slate-400 hover:text-white peer-checked/client:bg-slate-lighter peer-checked/client:text-white peer-checked/client:shadow-lg peer-checked/client:ring-1 peer-checked/client:ring-white/10"
-              htmlFor="role-client"
-            >
-              Client
-            </label>
-          </div>
-
-          {/* Form */}
-          <form className="space-y-5" onSubmit={handleLogin}>
+          {/* Form — native POST, no JS needed for auth */}
+          <form className="space-y-5" method="POST" action="/api/auth/login">
             {/* Email Input */}
             <div className="space-y-2 group/input">
               <label className="text-sm font-medium text-slate-300 ml-4" htmlFor="email">
@@ -181,6 +129,7 @@ export default function LoginPage() {
                 <input
                   className="w-full bg-[#2A2E39] border border-white/10 text-white text-base rounded-full py-3.5 pl-12 pr-5 focus:outline-none focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan placeholder-slate-500 transition-all duration-300"
                   id="email"
+                  name="email"
                   placeholder="name@apexbuilders.com"
                   type="email"
                   required
@@ -198,6 +147,7 @@ export default function LoginPage() {
                 <input
                   className="w-full bg-[#2A2E39] border border-white/10 text-white text-base rounded-full py-3.5 pl-12 pr-12 focus:outline-none focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan placeholder-slate-500 transition-all duration-300"
                   id="password"
+                  name="password"
                   placeholder="••••••••"
                   type="password"
                   required
@@ -226,7 +176,6 @@ export default function LoginPage() {
               <span className="relative z-10 flex items-center justify-center gap-2">
                 Sign In <ArrowRight className="size-5" />
               </span>
-              {/* Button sheen effect */}
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500 rounded-full"></div>
             </Button>
           </form>

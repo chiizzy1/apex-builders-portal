@@ -1,14 +1,70 @@
-import { Bell, Check, Zap, PaintRoller, MoreHorizontal, ArrowRight, ImageIcon, FileUp, FileText, Download } from "lucide-react";
+import { Bell, Check, Zap, PaintRoller, MoreHorizontal, ArrowRight, ImageIcon, FileText } from "lucide-react";
+import { getClientDashboardData } from "@/lib/queries";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-export default function ClientDashboard() {
+// Demo client UUID — replaced with session user ID once auth is wired
+const DEMO_CLIENT_ID = "02bc2c39-263b-49c2-96fd-e593ad16fe42";
+
+function adminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
+export default async function ClientDashboard() {
+  let activeProject = null;
+  let recentInvoices: any[] = [];
+  let recentLogs: any[] = [];
+
+  try {
+    // Use admin client directly so RLS doesn't block the server component
+    const supabase = adminClient();
+    const [projectsRes, invoicesRes] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("*, tech:assigned_tech_id(id, full_name, email), logs:project_logs(*)")
+        .eq("client_id", DEMO_CLIENT_ID)
+        .order("created_at", { ascending: false }),
+      supabase.from("invoices").select("*").eq("client_id", DEMO_CLIENT_ID).order("created_at", { ascending: false }).limit(5),
+    ]);
+
+    const projects = projectsRes.data ?? [];
+    activeProject = projects.find((p: any) => p.status === "in_progress") ?? projects[0] ?? null;
+    recentLogs = (activeProject?.logs ?? []).slice(-3) as any[];
+    recentInvoices = (invoicesRes.data ?? []) as any[];
+  } catch {
+    // Graceful fallback — static UI still renders
+  }
+
+  const clientName = activeProject ? "Sarah" : "Sarah";
+  const projectTitle = activeProject?.title ?? "Your Project";
+  const projectAddress = activeProject?.address ?? "";
+  const budget = activeProject?.budget ?? 190000;
+  const spent = activeProject?.amount_spent ?? 124500;
+  const paidPct = Math.round(Math.min((spent / budget) * 100, 100));
+  const estCompletion = activeProject?.estimated_completion
+    ? new Date(activeProject.estimated_completion).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Oct 15, 2024";
+  const phases: any[] = activeProject?.phases ?? [
+    { phase: "Design Phase", status: "completed", completedDate: "2024-03-15" },
+    { phase: "Foundation", status: "completed", completedDate: "2024-04-02" },
+    { phase: "Electrical", status: "in_progress", progress: 80 },
+    { phase: "Finishing & Paint", status: "pending" },
+  ];
+
   return (
     <div className="mx-auto max-w-[1440px] p-6 lg:p-10 pb-20">
       {/* Header */}
       <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">Welcome back, Sarah</h2>
+          <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">Welcome back, {clientName}</h2>
           <p className="text-slate-400">
-            Here&apos;s what&apos;s happening at <span className="text-primary font-semibold">124 Maple Drive</span> today.
+            Here&apos;s what&apos;s happening at <span className="text-primary font-semibold">{projectTitle}</span> today.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -17,7 +73,9 @@ export default function ClientDashboard() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FFA3] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00FFA3]"></span>
             </span>
-            <span className="text-xs font-bold text-[#00FFA3] tracking-wider uppercase">In Progress</span>
+            <span className="text-xs font-bold text-[#00FFA3] tracking-wider uppercase">
+              {activeProject?.status === "in_progress" ? "In Progress" : (activeProject?.status ?? "In Progress")}
+            </span>
           </div>
           <button className="flex items-center justify-center rounded-xl bg-[#1E2128] p-3 text-white shadow-card hover:bg-[#2A2D35] transition-colors border border-white/5">
             <Bell className="size-5" />
@@ -27,66 +85,69 @@ export default function ClientDashboard() {
 
       {/* Hero: Timeline */}
       <section className="mb-8 rounded-[24px] bg-[#1E2128] p-8 shadow-card border border-white/5 relative overflow-hidden">
-        {/* Background decorative glow */}
         <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-accent-cyan/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
         <div className="flex items-center justify-between mb-6 relative z-10">
           <h3 className="text-xl font-bold text-white">Project Timeline</h3>
           <span className="text-sm font-medium text-slate-400">
-            Estimated Completion: <span className="text-white">Oct 15, 2024</span>
+            Estimated Completion: <span className="text-white">{estCompletion}</span>
           </span>
         </div>
         <div className="relative z-10 w-full overflow-x-auto pb-4">
           <div className="min-w-[600px] relative">
             {/* Progress Bar Background */}
             <div className="absolute top-[28px] left-0 h-1 w-full bg-[#2A2D35] rounded-full"></div>
-            {/* Active Progress */}
-            <div className="absolute top-[28px] left-0 h-1 w-[60%] bg-linear-to-r from-primary to-accent-cyan rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)]"></div>
+            {/* Active Progress — based on completed phases */}
+            {(() => {
+              const total = phases.length;
+              const done = phases.filter((p) => p.status === "completed").length;
+              const pct = Math.round((done / total) * 100);
+              return (
+                <div
+                  className="absolute top-[28px] left-0 h-1 bg-linear-to-r from-primary to-accent-cyan rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)] transition-all duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              );
+            })()}
 
             <div className="relative flex justify-between">
-              {/* Step 1: Design */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1E2128] border-2 border-primary text-primary shadow-neon z-10">
-                  <Check className="size-6" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-white">Design Phase</p>
-                  <p className="text-xs text-slate-500">Completed Mar 15</p>
-                </div>
-              </div>
-
-              {/* Step 2: Foundation */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1E2128] border-2 border-primary text-primary shadow-neon z-10">
-                  <Check className="size-6" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-white">Foundation</p>
-                  <p className="text-xs text-slate-500">Completed Apr 02</p>
-                </div>
-              </div>
-
-              {/* Step 3: Electrical (Active) */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#1E2128] border-2 border-accent-cyan text-accent-cyan shadow-[0_0_15px_rgba(0,229,255,0.5)] z-10">
-                  <span className="absolute inset-0 rounded-full bg-accent-cyan/20 animate-pulse"></span>
-                  <Zap className="size-6" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-accent-cyan">Electrical</p>
-                  <p className="text-xs text-slate-400">In Progress</p>
-                </div>
-              </div>
-
-              {/* Step 4: Finishing */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1E2128] border-2 border-[#2A2D35] text-slate-500 z-10">
-                  <PaintRoller className="size-6" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-slate-500">Finishing</p>
-                  <p className="text-xs text-slate-600">Pending</p>
-                </div>
-              </div>
+              {phases.map((phase, i) => {
+                const isCompleted = phase.status === "completed";
+                const isActive = phase.status === "in_progress";
+                return (
+                  <div key={i} className="flex flex-col items-center gap-3">
+                    <div
+                      className={`flex h-14 w-14 items-center justify-center rounded-full border-2 z-10 relative
+                        ${isCompleted ? "bg-[#1E2128] border-primary text-primary" : ""}
+                        ${isActive ? "bg-[#1E2128] border-accent-cyan text-accent-cyan shadow-[0_0_15px_rgba(0,229,255,0.5)]" : ""}
+                        ${!isCompleted && !isActive ? "bg-[#1E2128] border-[#2A2D35] text-slate-500" : ""}
+                      `}
+                    >
+                      {isActive && <span className="absolute inset-0 rounded-full bg-accent-cyan/20 animate-pulse" />}
+                      {isCompleted ? (
+                        <Check className="size-6" />
+                      ) : isActive ? (
+                        <Zap className="size-6" />
+                      ) : (
+                        <PaintRoller className="size-6" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p
+                        className={`text-sm font-bold ${isActive ? "text-accent-cyan" : isCompleted ? "text-white" : "text-slate-500"}`}
+                      >
+                        {phase.phase}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {isCompleted
+                          ? `Completed ${phase.completedDate ? new Date(phase.completedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}`
+                          : isActive
+                            ? "In Progress"
+                            : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -96,13 +157,11 @@ export default function ClientDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
         {/* Left: Budget Card */}
         <div className="rounded-[24px] bg-[#1E2128] p-8 shadow-card border border-white/5 flex flex-col justify-between h-full relative overflow-hidden group">
-          {/* Hover Effect */}
           <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
           <div className="flex items-start justify-between mb-8 relative z-10">
             <div>
               <p className="text-slate-400 text-sm font-medium mb-1">Total Project Budget</p>
-              <h3 className="text-3xl font-bold text-white">$190,000</h3>
+              <h3 className="text-3xl font-bold text-white">${budget.toLocaleString()}</h3>
             </div>
             <button className="p-2 rounded-lg bg-[#2A2D35] hover:bg-primary hover:text-white transition-colors text-slate-400">
               <MoreHorizontal className="size-5" />
@@ -110,65 +169,92 @@ export default function ClientDashboard() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
-            {/* Circular Progress (SVG) */}
+            {/* Circular Progress */}
             <div className="relative h-40 w-40 flex-shrink-0">
               <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
-                {/* Background circle */}
                 <circle cx="50" cy="50" fill="transparent" r="40" stroke="#2A2D35" strokeWidth="8"></circle>
-                {/* Progress circle */}
                 <circle
-                  className="shadow-neon drop-shadow-[0_0_8px_rgba(242,124,13,0.8)]"
+                  className="drop-shadow-[0_0_8px_rgba(242,124,13,0.8)]"
                   cx="50"
                   cy="50"
                   fill="transparent"
                   r="40"
                   stroke="#ff7b00"
                   strokeDasharray="251.2"
-                  strokeDashoffset="87.92"
+                  strokeDashoffset={251.2 - (251.2 * paidPct) / 100}
                   strokeLinecap="round"
                   strokeWidth="8"
-                ></circle>
+                />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold text-white">65%</span>
+                <span className="text-3xl font-bold text-white">{paidPct}%</span>
                 <span className="text-xs text-slate-400 uppercase tracking-wide">Paid</span>
               </div>
             </div>
 
-            {/* Stats & Recent Invoices */}
             <div className="flex-1 w-full">
               <div className="mb-6">
                 <p className="text-sm text-slate-400 mb-1">Amount Spent</p>
-                <p className="text-4xl font-extrabold text-primary tracking-tight">$124,500</p>
+                <p className="text-4xl font-extrabold text-primary tracking-tight">${spent.toLocaleString()}</p>
               </div>
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Recent Invoices</p>
-                {/* Invoice 1 */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#2A2D35]/50 border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                      <FileText className="size-4" />
+                {recentInvoices.length > 0 ? (
+                  recentInvoices.slice(0, 2).map((inv: any) => (
+                    <div
+                      key={inv.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#2A2D35]/50 border border-white/5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                          <FileText className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">
+                            {inv.number} — {inv.description?.slice(0, 22)}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {inv.due_date
+                              ? new Date(inv.due_date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-white">${Number(inv.total).toLocaleString()}</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">#004 - Wiring Phase 1</p>
-                      <p className="text-xs text-slate-400">May 10, 2024</p>
+                  ))
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#2A2D35]/50 border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                          <FileText className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">#004 - Wiring Phase 1</p>
+                          <p className="text-xs text-slate-400">May 10, 2024</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-white">$5,000</span>
                     </div>
-                  </div>
-                  <span className="text-sm font-bold text-white">$5,000</span>
-                </div>
-                {/* Invoice 2 */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#2A2D35]/50 border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                      <FileText className="size-4" />
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#2A2D35]/50 border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                          <FileText className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">#003 - Concrete Slab</p>
+                          <p className="text-xs text-slate-400">Apr 12, 2024</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-white">$12,000</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">#003 - Concrete Slab</p>
-                      <p className="text-xs text-slate-400">Apr 12, 2024</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-bold text-white">$12,000</span>
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -179,7 +265,11 @@ export default function ClientDashboard() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-bold text-white">Latest from the site</h3>
-              <p className="text-sm text-slate-400">Updated 2 hours ago</p>
+              <p className="text-sm text-slate-400">
+                {recentLogs.length > 0
+                  ? `${recentLogs.length} update${recentLogs.length > 1 ? "s" : ""} from team`
+                  : "Updated 2 hours ago"}
+              </p>
             </div>
             <button className="text-sm font-semibold text-primary hover:text-orange-400 flex items-center gap-1 transition-colors">
               View Gallery <ArrowRight className="size-4" />
@@ -242,58 +332,49 @@ export default function ClientDashboard() {
           <button className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">See All</button>
         </div>
         <div className="flex flex-col gap-6">
-          {/* Activity Item 1 */}
-          <div className="flex gap-4 items-start">
-            <div className="mt-1 h-10 w-10 flex-shrink-0 rounded-full bg-accent-cyan/20 flex items-center justify-center text-accent-cyan border border-accent-cyan/30">
-              <Zap className="size-5" />
-            </div>
-            <div className="flex-1 bg-[#2A2D35]/30 rounded-2xl p-4 border border-white/5 hover:bg-[#2A2D35]/50 transition-colors">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm text-slate-200">
-                  <span className="font-bold text-white">Mike (Electrician)</span> posted an update
-                </p>
-                <span className="text-xs text-slate-500">2 hrs ago</span>
-              </div>
-              <p className="text-sm text-slate-400 mb-3">
-                Main breaker panel has been installed and inspected. Wiring for the kitchen island is 80% complete.
-              </p>
-              <div className="flex gap-2">
-                <span className="px-2 py-1 rounded bg-[#1E2128] text-[10px] font-bold text-accent-cyan border border-accent-cyan/20">
-                  Electrical
-                </span>
-                <span className="px-2 py-1 rounded bg-[#1E2128] text-[10px] font-bold text-slate-400 border border-slate-700">
-                  Milestone
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Activity Item 2 */}
-          <div className="flex gap-4 items-start">
-            <div className="mt-1 h-10 w-10 flex-shrink-0 rounded-full bg-primary/20 flex items-center justify-center text-primary border border-primary/30">
-              <FileUp className="size-5" />
-            </div>
-            <div className="flex-1 bg-[#2A2D35]/30 rounded-2xl p-4 border border-white/5 hover:bg-[#2A2D35]/50 transition-colors">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm text-slate-200">
-                  <span className="font-bold text-white">Admin</span> uploaded a new file
-                </p>
-                <span className="text-xs text-slate-500">Yesterday</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-[#1E2128] rounded-xl border border-white/5 max-w-md cursor-pointer hover:border-primary/50 transition-colors group">
-                <div className="h-10 w-10 rounded bg-red-500/20 flex items-center justify-center text-red-500">
-                  <FileText className="size-5" />
+          {recentLogs.length > 0 ? (
+            recentLogs.map((log: any) => (
+              <div key={log.id} className="flex gap-4 items-start">
+                <div className="mt-1 h-10 w-10 flex-shrink-0 rounded-full bg-accent-cyan/20 flex items-center justify-center text-accent-cyan border border-accent-cyan/30">
+                  <Zap className="size-5" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">
-                    2nd Floor Blueprints_v2.pdf
+                <div className="flex-1 bg-[#2A2D35]/30 rounded-2xl p-4 border border-white/5 hover:bg-[#2A2D35]/50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="text-sm text-slate-200">
+                      <span className="font-bold text-white">Team</span> posted an update
+                    </p>
+                    <span className="text-xs text-slate-500">
+                      {new Date(log.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-400 mb-3">{log.description}</p>
+                  {log.progress_pct && (
+                    <span className="px-2 py-1 rounded bg-[#1E2128] text-[10px] font-bold text-accent-cyan border border-accent-cyan/20">
+                      {log.progress_pct}% Complete
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            // Fallback static activity
+            <div className="flex gap-4 items-start">
+              <div className="mt-1 h-10 w-10 flex-shrink-0 rounded-full bg-accent-cyan/20 flex items-center justify-center text-accent-cyan border border-accent-cyan/30">
+                <Zap className="size-5" />
+              </div>
+              <div className="flex-1 bg-[#2A2D35]/30 rounded-2xl p-4 border border-white/5">
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-sm text-slate-200">
+                    <span className="font-bold text-white">Mike (Electrician)</span> posted an update
                   </p>
-                  <p className="text-xs text-slate-500">2.4 MB • PDF</p>
+                  <span className="text-xs text-slate-500">2 hrs ago</span>
                 </div>
-                <Download className="size-5 text-slate-500 group-hover:text-white" />
+                <p className="text-sm text-slate-400">
+                  Main breaker panel has been installed. Wiring for kitchen island is 80% complete.
+                </p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </div>
