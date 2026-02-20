@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# stitch design artifacts & prompts
+stitch-output/
+stitch-*.html
+prompt-*.md
+DESIGN.md
+PLAN.md
