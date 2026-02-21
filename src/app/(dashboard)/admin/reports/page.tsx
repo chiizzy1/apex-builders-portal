@@ -1,62 +1,17 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FloatingCard } from "@/components/ui/FloatingCard";
 import { PillButton } from "@/components/ui/PillButton";
+import { getAllInvoices } from "@/lib/queries";
 
-export default function AdminReportsPage() {
-  const invoices = [
-    {
-      id: "#INV-2049",
-      client: "TechSpace HQ",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuBM5OzGgJjxsZ4vTUm8pZ51br-f0OzOAEZfxP1jFFYRdrJJprdLOT2YihBx5Aj6Ten7IToeoMPDrhwFrzAB4utrjU8Qay1N33oz-JtqbtlvHL_JuR0LecHD4oHSQfu2leT3DW8eas4kLhQ5CRrr1nC_5-o94zUZO7ObUuZC39JSKOxoOaZdCjb6HtP3SqKnnaZvjBZwfQn7v5g1yEn3ZxBvfXMp1oudnrQ37uN5mvnJ0Fj3pjPkb1rFbccMgF-ONvQZfl3L1Soo99M",
-      date: "Oct 24, 2023",
-      amount: "$12,000.00",
-      status: "Paid",
-      statusColor: "text-emerald-400",
-      statusBg: "bg-emerald-500/10",
-      statusBorder: "border-emerald-500/20",
-      dotColor: "bg-emerald-400",
-    },
-    {
-      id: "#INV-2050",
-      client: "Apex Lofts",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuDQ7cKJFhKxU20QPy-bdpuk1KsdG4_8Vi7C7a3wpcQfN3Lo1ejSqyoIVOEr0-OxE2UdlNbmKXaF0L_CY8Y4wVsBwqjIZ5JFjk48sw_VrFEy67dbeDLJWG2dYQNu4u5H2eVBrnmmd0_wrt0xMt5cnm0OCC9zXnU1Pv_dAfB_rb8hUn2-F6SzDvt_UNqKpbQsKmuhAh9467xqLOH7oUC2ojwulYx1ql2_e_W_usgBirEwfN3-ZclG7VJI5oWL7SNLmaXDVC0l_IGRQ30",
-      date: "Oct 26, 2023",
-      amount: "$4,500.00",
-      status: "Pending",
-      statusColor: "text-amber-400",
-      statusBg: "bg-amber-500/10",
-      statusBorder: "border-amber-500/20",
-      dotColor: "bg-amber-400",
-    },
-    {
-      id: "#INV-2051",
-      client: "Global Logistics",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCumxxMnJlo5LVs_A-puOjWD120en3VX1Pbe4CnDnsCxv3DrngA7Rqh4E32n6gNn0q1oQazsQOtIzclAHEtgo2JMij6Nq97jKVsekE_OVujCRQtgZV07o1w88WHWBqgVWtbGJ8TTq9MSwjW8gIQQ3Lq9LEkuDu4BLvfd7c0AgInoVZ-0dTI-m7MJvKTcRVPUELMwOVZD_PVnitc9FkYd9kjO1KXw4mBz8Z7ih_Cg8MGf916I_wM3c42_OEB2mnvuFEF39ydDRLM_64",
-      date: "Oct 28, 2023",
-      amount: "$8,250.00",
-      status: "Overdue",
-      statusColor: "text-rose-400",
-      statusBg: "bg-rose-500/10",
-      statusBorder: "border-rose-500/20",
-      dotColor: "bg-rose-400",
-    },
-    {
-      id: "#INV-2052",
-      client: "Urban Retail Inc.",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuBs3dKlff2u_IjIt5DHaoGsdCHK2lNMBI-Ao-CxV7BGuCp0v8a9e8nlJa2XCIbctLmRRRoVRF2WfloBlgugWLyjCLynKf9xbt7grf0KMnma8dr7739QOep-Rc-mP5fZyY_xXs08qke7Dqj1--5o0mI_sC9meOWBDpqI1mpOGPgFvbNDn28n-GXdfdbo3Z37QUY4UQRRyHP4xVFz4PCc5DGuBjy4MVrq3d9_MYXBBHsrhSMGRZ_ECs_HinKOIEK1XZlVygSChLVBtaw",
-      date: "Nov 01, 2023",
-      amount: "$18,900.00",
-      status: "Paid",
-      statusColor: "text-emerald-400",
-      statusBg: "bg-emerald-500/10",
-      statusBorder: "border-emerald-500/20",
-      dotColor: "bg-emerald-400",
-    },
-  ];
+const STATUS_STYLE: Record<string, { color: string; bg: string; border: string; dot: string }> = {
+  paid: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", dot: "bg-emerald-400" },
+  pending: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", dot: "bg-amber-400" },
+  overdue: { color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", dot: "bg-rose-400" },
+  draft: { color: "text-slate-400", bg: "bg-slate-500/10", border: "border-slate-500/20", dot: "bg-slate-400" },
+};
+
+export default async function AdminReportsPage() {
+  const invoices = await getAllInvoices();
 
   return (
     <div className="flex-1 w-full max-w-[1400px] mx-auto p-6 md:p-8 flex flex-col gap-8 relative">
@@ -287,34 +242,48 @@ export default function AdminReportsPage() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {invoices.map((invoice, idx) => (
-                <tr key={idx} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative">
-                  <td className="py-4 pl-2 font-mono text-slate-400">{invoice.id}</td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="size-8 rounded-full bg-cover bg-center"
-                        style={{ backgroundImage: `url('${invoice.avatar}')` }}
-                      ></div>
-                      <span className="text-white font-medium">{invoice.client}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 text-slate-400">{invoice.date}</td>
-                  <td className="py-4 text-right font-bold text-white text-base">{invoice.amount}</td>
-                  <td className="py-4 text-center">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${invoice.statusBg} ${invoice.statusColor} border ${invoice.statusBorder}`}
-                    >
-                      <span className={`size-1.5 rounded-full ${invoice.dotColor}`}></span> {invoice.status}
-                    </span>
-                  </td>
-                  <td className="py-4 text-right pr-2">
-                    <button className="size-8 rounded-full hover:bg-white/10 flex items-center justify-center ml-auto transition-colors text-slate-400 hover:text-white">
-                      <span className="material-symbols-outlined text-base">more_vert</span>
-                    </button>
+              {invoices.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                    No invoices found.
                   </td>
                 </tr>
-              ))}
+              )}
+              {invoices.map((invoice) => {
+                const style = STATUS_STYLE[invoice.status] ?? STATUS_STYLE.draft;
+                const amount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(invoice.total ?? 0);
+                const date = invoice.due_date
+                  ? new Date(invoice.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                  : "—";
+                return (
+                  <tr
+                    key={invoice.id}
+                    className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 relative"
+                  >
+                    <td className="py-4 pl-2 font-mono text-slate-400">
+                      # {invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}
+                    </td>
+                    <td className="py-4">
+                      <span className="text-white font-medium">{invoice.project_title ?? "—"}</span>
+                    </td>
+                    <td className="py-4 text-slate-400">{date}</td>
+                    <td className="py-4 text-right font-bold text-white text-base">{amount}</td>
+                    <td className="py-4 text-center">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${style.bg} ${style.color} border ${style.border} capitalize`}
+                      >
+                        <span className={`size-1.5 rounded-full ${style.dot}`} />
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td className="py-4 text-right pr-2">
+                      <button className="size-8 rounded-full hover:bg-white/10 flex items-center justify-center ml-auto transition-colors text-slate-400 hover:text-white">
+                        <span className="material-symbols-outlined text-base">more_vert</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
