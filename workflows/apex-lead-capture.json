@@ -3,87 +3,25 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "apex-lead",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "id": "webhook-trigger",
-      "name": "Webhook: New Lead",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [240, 300],
-      "webhookId": "apex-lead"
-    },
-    {
-      "parameters": {
-        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst required = ['name', 'email'];\nfor (const field of required) {\n  if (!body[field] || String(body[field]).trim().length === 0) {\n    throw new Error(`Missing required field: ${field}`);\n  }\n}\n\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!emailRegex.test(body.email)) {\n  throw new Error('Invalid email format');\n}\n\nreturn [{\n  json: {\n    name: body.name.trim(),\n    email: body.email.trim().toLowerCase(),\n    phone: body.phone?.trim() ?? '',\n    serviceType: body.serviceType ?? 'General Inquiry',\n    notes: body.notes?.trim() ?? '',\n    submittedAt: new Date().toISOString()\n  }\n}];"
-      },
-      "id": "validate-lead",
-      "name": "Validate Lead Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "leads",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "name": "={{ $json.name }}",
-            "email": "={{ $json.email }}",
-            "phone": "={{ $json.phone }}",
-            "service_type": "={{ $json.serviceType }}",
-            "notes": "={{ $json.notes }}",
-            "created_at": "={{ $json.submittedAt }}"
-          }
-        },
-        "options": {}
-      },
-      "id": "supabase-insert",
-      "name": "Insert Lead to Supabase",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [700, 300],
-      "credentials": {
-        "supabaseApi": {
-          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sendTo": "james@apexbuilders.com",
-        "subject": "🔔 New Client Request — {{ $('Validate Lead Data').item.json.name }}",
-        "message": "<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;\">\n  <div style=\"background: #13151A; border-radius: 16px; padding: 32px; color: white;\">\n    <div style=\"text-align: center; margin-bottom: 24px;\">\n      <h1 style=\"color: #0df2f2; font-size: 24px; margin: 0;\">⚡ New Lead Alert</h1>\n      <p style=\"color: #9ca3af; margin-top: 8px;\">Apex Builders Client Portal</p>\n    </div>\n    \n    <div style=\"background: #1e2128; border-radius: 12px; padding: 24px; margin-bottom: 16px;\">\n      <h2 style=\"color: white; font-size: 18px; margin-bottom: 16px; border-bottom: 1px solid #374151; padding-bottom: 12px;\">Client Details</h2>\n      <table style=\"width: 100%; border-collapse: collapse;\">\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0; width: 40%;\">Name</td>\n          <td style=\"color: white; font-weight: bold; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.name }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Email</td>\n          <td style=\"color: #0df2f2; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.email }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Phone</td>\n          <td style=\"color: white; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.phone || 'Not provided' }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Service Type</td>\n          <td style=\"color: #f97316; font-weight: bold; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.serviceType }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    {{ $('Validate Lead Data').item.json.notes ? `<div style=\"background: #1e2128; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 3px solid #0df2f2;\"><h3 style=\"color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;\">Notes from Client</h3><p style=\"color: white; margin: 0;\">${$('Validate Lead Data').item.json.notes}</p></div>` : '' }}\n    \n    <div style=\"text-align: center; margin-top: 24px;\">\n      <a href=\"https://apex-builders-portal-nu.vercel.app/admin/dashboard\" style=\"background: #0df2f2; color: #13151A; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;\">View in Dashboard →</a>\n    </div>\n    \n    <p style=\"color: #4b5563; text-align: center; font-size: 12px; margin-top: 24px;\">Received {{ $('Validate Lead Data').item.json.submittedAt }}</p>\n  </div>\n</body>\n</html>",
+        "respondWith": "json",
+        "responseBody": "={\"success\": false, \"message\": \"Something went wrong. Please try again or call us directly.\"}",
         "options": {
-          "appendAttribution": false,
-          "replyTo": "={{ $('Validate Lead Data').item.json.email }}"
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
         }
       },
-      "id": "gmail-notify",
-      "name": "Email Admin: New Lead",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
-      "position": [940, 300],
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "YOUR_GMAIL_CREDENTIAL_ID",
-          "name": "Gmail Account"
-        }
-      }
+      "id": "b4a1161c-da27-4328-86af-2c9cc72e1ed9",
+      "name": "Send Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [304, 208]
     },
     {
       "parameters": {
@@ -100,52 +38,111 @@
           }
         }
       },
-      "id": "success-response",
+      "id": "57a902e7-bcc9-4225-9e4b-03a352091723",
       "name": "Send Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1160, 300]
+      "position": [768, 16]
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\"success\": false, \"message\": \"Something went wrong. Please try again or call us directly.\"}",
+        "sendTo": "james@apexbuilders.com",
+        "subject": "🔔 New Client Request — {{ $('Validate Lead Data').item.json.name }}",
+        "message": "<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;\">\n  <div style=\"background: #13151A; border-radius: 16px; padding: 32px; color: white;\">\n    <div style=\"text-align: center; margin-bottom: 24px;\">\n      <h1 style=\"color: #0df2f2; font-size: 24px; margin: 0;\">⚡ New Lead Alert</h1>\n      <p style=\"color: #9ca3af; margin-top: 8px;\">Apex Builders Client Portal</p>\n    </div>\n    \n    <div style=\"background: #1e2128; border-radius: 12px; padding: 24px; margin-bottom: 16px;\">\n      <h2 style=\"color: white; font-size: 18px; margin-bottom: 16px; border-bottom: 1px solid #374151; padding-bottom: 12px;\">Client Details</h2>\n      <table style=\"width: 100%; border-collapse: collapse;\">\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0; width: 40%;\">Name</td>\n          <td style=\"color: white; font-weight: bold; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.name }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Email</td>\n          <td style=\"color: #0df2f2; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.email }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Phone</td>\n          <td style=\"color: white; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.phone || 'Not provided' }}</td>\n        </tr>\n        <tr>\n          <td style=\"color: #9ca3af; padding: 8px 0;\">Service Type</td>\n          <td style=\"color: #f97316; font-weight: bold; padding: 8px 0;\">{{ $('Validate Lead Data').item.json.serviceType }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    {{ $('Validate Lead Data').item.json.notes ? `<div style=\"background: #1e2128; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 3px solid #0df2f2;\"><h3 style=\"color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;\">Notes from Client</h3><p style=\"color: white; margin: 0;\">${$('Validate Lead Data').item.json.notes}</p></div>` : '' }}\n    \n    <div style=\"text-align: center; margin-top: 24px;\">\n      <a href=\"https://apex-builders-portal-nu.vercel.app/admin/dashboard\" style=\"background: #0df2f2; color: #13151A; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;\">View in Dashboard →</a>\n    </div>\n    \n    <p style=\"color: #4b5563; text-align: center; font-size: 12px; margin-top: 24px;\">Received {{ $('Validate Lead Data').item.json.submittedAt }}</p>\n  </div>\n</body>\n</html>",
         "options": {
-          "responseCode": 500,
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
+          "appendAttribution": false,
+          "replyTo": "={{ $('Validate Lead Data').item.json.email }}"
         }
       },
-      "id": "error-response",
-      "name": "Send Error Response",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [700, 480]
+      "id": "12231055-0a72-4093-b168-e1af0fcd93cc",
+      "name": "Email Admin: New Lead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [544, 16],
+      "webhookId": "10386d60-7ef7-44dc-9a6c-71a7f1e311f5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "moboSAjyUXqng2lk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $json.phone }}"
+            },
+            {
+              "fieldId": "service_type",
+              "fieldValue": "={{ $json.serviceType }}"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{ $json.notes }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $json.submittedAt }}"
+            }
+          ]
+        }
+      },
+      "id": "e7a3bb0d-51ad-4b79-8d15-9f81fbc9664c",
+      "name": "Insert Lead to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [304, 16],
+      "credentials": {
+        "supabaseApi": {
+          "id": "XyNweWpfhxxm1syy",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst required = ['name', 'email'];\nfor (const field of required) {\n  if (!body[field] || String(body[field]).trim().length === 0) {\n    throw new Error(`Missing required field: ${field}`);\n  }\n}\n\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!emailRegex.test(body.email)) {\n  throw new Error('Invalid email format');\n}\n\nreturn [{\n  json: {\n    name: body.name.trim(),\n    email: body.email.trim().toLowerCase(),\n    phone: body.phone?.trim() ?? '',\n    serviceType: body.serviceType ?? 'General Inquiry',\n    notes: body.notes?.trim() ?? '',\n    submittedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "7e269e67-0ca2-4899-aa1b-b48dfe30ba00",
+      "name": "Validate Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [64, 16]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apex-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a466ec1f-3d8c-4ba6-b89f-35ed5d56cb24",
+      "name": "Webhook: New Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, 16],
+      "webhookId": "apex-lead"
     }
   ],
+  "pinData": {},
   "connections": {
-    "Webhook: New Lead": {
+    "Email Admin: New Lead": {
       "main": [
         [
           {
-            "node": "Validate Lead Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Lead Data": {
-      "main": [
-        [
-          {
-            "node": "Insert Lead to Supabase",
+            "node": "Send Success Response",
             "type": "main",
             "index": 0
           }
@@ -163,11 +160,22 @@
         ]
       ]
     },
-    "Email Admin: New Lead": {
+    "Validate Lead Data": {
       "main": [
         [
           {
-            "node": "Send Success Response",
+            "node": "Insert Lead to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: New Lead": {
+      "main": [
+        [
+          {
+            "node": "Validate Lead Data",
             "type": "main",
             "index": 0
           }
@@ -175,14 +183,17 @@
       ]
     }
   },
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
+  "versionId": "604c0c61-3e3b-4211-a294-631c0a728c51",
   "meta": {
-    "templateId": "apex-lead-capture",
-    "instanceId": "apex-builders"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8acce3eb287d671d82e2d13707725a89432d4b37fb07cb3dc8633a0ebb3507d9"
   },
-  "tags": ["apex-builders", "leads", "notifications"]
+  "id": "eh3rCFeXKR6qvQJO",
+  "tags": []
 }

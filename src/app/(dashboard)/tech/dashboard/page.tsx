@@ -236,7 +236,7 @@ export default async function TechnicianDashboard() {
                   </div>
                 </div>
               </div>
-              <JobActionCard job={heroJob} />
+              <JobActionCard job={heroJob} techName={techName} />
             </div>
           </div>
         </div>

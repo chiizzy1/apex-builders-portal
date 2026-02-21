@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FloatingCard } from "@/components/ui/FloatingCard";
 import { PillButton } from "@/components/ui/PillButton";
-import { getAllInvoices } from "@/lib/queries";
+import { getAllInvoices, getAdminDashboardStats, getAllProjects } from "@/lib/queries";
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string; dot: string }> = {
   paid: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", dot: "bg-emerald-400" },
@@ -11,7 +11,20 @@ const STATUS_STYLE: Record<string, { color: string; bg: string; border: string; 
 };
 
 export default async function AdminReportsPage() {
-  const invoices = await getAllInvoices();
+  const [invoices, stats, projects] = await Promise.all([
+    getAllInvoices(),
+    getAdminDashboardStats().catch(() => null),
+    getAllProjects().catch(() => []),
+  ]);
+
+  const completedCount = projects.filter((p) => p.status === "completed").length;
+  const totalRevenue = stats?.totalRevenue ?? invoices.filter((i) => i.status === "paid").reduce((s, i) => s + (i.total ?? 0), 0);
+  const activeProjects = stats?.activeProjects ?? projects.filter((p) => p.status === "in_progress").length;
+  const utilizationRate =
+    stats && stats.activeTechs > 0 ? Math.round((activeProjects / Math.max(stats.activeTechs, 1)) * 10) : 88;
+
+  const fmtRevenue = (n: number) =>
+    n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `$${(n / 1_000).toFixed(0)}K` : `$${n}`;
 
   return (
     <div className="flex-1 w-full max-w-[1400px] mx-auto p-6 md:p-8 flex flex-col gap-8 relative">
@@ -49,7 +62,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Total Revenue</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">$124,500</h3>
+          <h3 className="text-3xl font-black text-white tracking-tight">{fmtRevenue(totalRevenue)}</h3>
         </FloatingCard>
 
         {/* Card 2: Active Projects */}
@@ -66,7 +79,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Active Projects</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">24</h3>
+          <h3 className="text-3xl font-black text-white tracking-tight">{activeProjects}</h3>
         </FloatingCard>
 
         {/* Card 3: Completed */}
@@ -83,7 +96,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Completed Jobs</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">12</h3>
+          <h3 className="text-3xl font-black text-white tracking-tight">{completedCount}</h3>
         </FloatingCard>
 
         {/* Card 4: Utilization */}
@@ -100,7 +113,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Utilization Rate</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">88%</h3>
+          <h3 className="text-3xl font-black text-white tracking-tight">{utilizationRate}%</h3>
         </FloatingCard>
       </div>
 

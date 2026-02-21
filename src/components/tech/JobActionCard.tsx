@@ -12,6 +12,8 @@ interface Job {
   status: string;
   category?: string | null;
   estimated_completion?: string | null;
+  client?: { full_name: string; email: string } | null;
+  assigned_tech?: { full_name: string } | null;
 }
 
 type ActionStatus = "idle" | "loading" | "done" | "error";
@@ -29,7 +31,7 @@ const STATUS_BADGE: Record<string, string> = {
   completed: "bg-slate-500/20 text-slate-400 border-slate-500/30",
 };
 
-export function JobActionCard({ job: initialJob }: { job: Job }) {
+export function JobActionCard({ job: initialJob, techName }: { job: Job; techName?: string }) {
   const [job, setJob] = useState(initialJob);
   const [actionStatus, setActionStatus] = useState<ActionStatus>("idle");
   const [note, setNote] = useState("");
@@ -96,13 +98,16 @@ export function JobActionCard({ job: initialJob }: { job: Job }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            jobId: job.id,
-            jobTitle: job.title,
+            projectId: job.id,
+            projectTitle: job.title,
             address: job.address,
             previousStatus: job.status,
             newStatus: nextStep.next,
             note: note.trim() || null,
             photoUrl,
+            clientEmail: job.client?.email ?? "client@example.com",
+            clientName: job.client?.full_name ?? "Valued Client",
+            techName: techName ?? "Apex Technician",
             updatedAt: new Date().toISOString(),
           }),
         }).catch(() => {

@@ -43,13 +43,26 @@ export function LeadCaptureModal({ isOpen, onClose }: Props) {
     setSubmitState("loading");
 
     try {
-      const response = await fetch(N8N_WEBHOOKS.LEAD_CAPTURE, {
+      // Always persist to Supabase first
+      const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       if (!response.ok) throw new Error("Submission failed");
+
+      // Also fire n8n webhook for notifications (fire-and-forget)
+      if (N8N_WEBHOOKS.LEAD_CAPTURE) {
+        fetch(N8N_WEBHOOKS.LEAD_CAPTURE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }).catch(() => {
+          /* silent: notification is non-critical */
+        });
+      }
+
       setSubmitState("success");
     } catch {
       setSubmitState("error");

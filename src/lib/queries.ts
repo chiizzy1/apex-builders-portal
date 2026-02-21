@@ -326,9 +326,12 @@ export async function insertLead(lead: {
   service_type?: string;
   notes?: string;
 }): Promise<boolean> {
-  const supabase = await createClient();
+  const adminClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 
-  const { error } = await supabase.from("leads").insert(lead);
+  const { error } = await adminClient.from("leads").insert(lead);
 
   if (error) {
     console.error("[insertLead]", error);

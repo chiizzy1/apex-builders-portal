@@ -41,11 +41,16 @@ yarn-error.log*
 next-env.d.ts
 
 # stitch design artifacts & prompts
-stitch-output/
+/stitch-output
 stitch-*.html
-prompt-*.md
-DESIGN.md
-PLAN.md
+
+# ignore all markdown files except README
+*.md
+!README.md
+!readme.md
+!Readme.md
 
 .vercel
 .env*.local
+
+here 
