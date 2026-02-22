@@ -1,6 +1,6 @@
 export function SocialProof() {
   return (
-    <section className="w-full max-w-6xl mb-32 relative z-10 px-4">
+    <section className="w-full max-w-6xl mb-32 relative z-10 px-4 md:px-8">
       <p className="text-center text-sm font-bold text-gray-500 mb-8 uppercase tracking-widest">
         Trusted by top builders worldwide
       </p>

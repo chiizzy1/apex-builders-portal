@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, PlayCircle, MapPin, Calendar, Loader2, ChevronRight, Camera, X, ImageIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { N8N_WEBHOOKS } from "@/lib/constants";
@@ -170,47 +171,62 @@ export function JobActionCard({ job: initialJob, techName }: { job: Job; techNam
       </div>
 
       {/* Collapsible note + photo inputs */}
-      {showInputs && !isCompleted && (
-        <div className="mb-4 space-y-3">
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a field note — e.g. 'Electrical phase completed, passed inspection'"
-            rows={2}
-            className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all resize-none"
-          />
+      <AnimatePresence>
+        {showInputs && !isCompleted && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+            animate={{ opacity: 1, height: "auto", filter: "blur(0px)" }}
+            exit={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mb-4 space-y-3">
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add a field note — e.g. 'Electrical phase completed, passed inspection'"
+                rows={2}
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all resize-none"
+              />
 
-          {/* Photo upload */}
-          {photoPreview ? (
-            <div className="relative rounded-xl overflow-hidden border border-white/10 w-full aspect-video">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photoPreview} alt="Site photo preview" className="w-full h-full object-cover" />
-              <button
-                onClick={clearPhoto}
-                className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              {/* Photo upload */}
+              {photoPreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-white/10 w-full aspect-video">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoPreview} alt="Site photo preview" className="w-full h-full object-cover" />
+                  <button
+                    onClick={clearPhoto}
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-colors text-sm font-medium"
+                >
+                  <Camera className="h-4 w-4" />
+                  Attach Site Photo
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
             </div>
-          ) : (
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-colors text-sm font-medium"
-            >
-              <Camera className="h-4 w-4" />
-              Attach Site Photo
-            </button>
-          )}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Action row */}
       {isCompleted ? (
-        <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 5 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", bounce: 0.5, duration: 0.6 }}
+          className="flex items-center gap-2 text-emerald-400 font-semibold text-sm"
+        >
           <CheckCircle className="h-5 w-5" />
           Job Completed
-        </div>
+        </motion.div>
       ) : nextStep ? (
         <div className="flex items-center gap-3">
           <button
@@ -230,7 +246,31 @@ export function JobActionCard({ job: initialJob, techName }: { job: Job; techNam
               <span>Try Again</span>
             ) : (
               <>
-                {job.status === "in_progress" ? <CheckCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {job.status === "in_progress" ? (
+                    <motion.div
+                      key="check"
+                      initial={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      transition={{ duration: 0.2 }}
+                      className="flex"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="play"
+                      initial={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      transition={{ duration: 0.2 }}
+                      className="flex"
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {nextStep.label}
               </>
             )}

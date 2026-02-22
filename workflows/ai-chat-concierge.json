@@ -1,0 +1,262 @@
+{
+  "name": "Apex — AI Chat Concierge",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-chat-proxy",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (Receive Chat Request)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst message = body.message ?? '';\nconst sessionId = body.sessionId ?? 'default_session';\n\nif (!message || message.trim().length === 0) {\n  throw new Error('Message is required');\n}\n\nreturn [{\n  json: {\n    message: message.trim(),\n    sessionId\n  }\n}];"
+      },
+      "id": "parse-message",
+      "name": "Parse & Validate Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are the 'Apex Builders Digital Concierge'. You are a highly professional, helpful, and concise AI assistant for a premium construction and smart-automation agency.\n\nYour primary goals are:\n1. Answer basic questions about the agency's services (construction, web development, custom portals, automations).\n2. Persuade visitors that 'smart systems' (websites with embedded AI and automation) are the future of business.\n3. If a user expresses interest in a quote, a demo, or hiring Apex, you must ask for their Name, Email, and Phone number. Use the 'record_lead' tool immediately when they provide this info.\n\nTone: Authoritative, premium, concise, and highly professional. Do not use excessive emojis. Keep answers under 3 sentences unless explaining a complex topic."
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "openai-chat",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [700, 500],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdKey": "={{ $('Parse & Validate Message').item.json.sessionId }}"
+      },
+      "id": "memory",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "toolDescription": "record_lead — Call this tool ONLY when the user asks to book a demo, get a quote, or hire Apex AND they have provided their Name, Email, Phone, and you have notes. If they have not provided an email, ask for it first before calling this tool.",
+        "method": "POST",
+        "url": "https://wajyfoybuwwqoklucxpv.supabase.co/rest/v1/leads",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhanlmb3lidXd3cW9rbHVjeHB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzM3MDcsImV4cCI6MjA4NzEwOTcwN30.PmOe8Ux1kdoVmR5oYqZ0gfbMvubZA1Thb3m1BjJ5Brc"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhanlmb3lidXd3cW9rbHVjeHB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzM3MDcsImV4cCI6MjA4NzEwOTcwN30.PmOe8Ux1kdoVmR5oYqZ0gfbMvubZA1Thb3m1BjJ5Brc"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{name}\",\n  \"email\": \"{email}\",\n  \"phone\": \"{phone}\",\n  \"notes\": \"{notes}\",\n  \"status\": \"new\",\n  \"source\": \"ai_concierge\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "name",
+              "description": "The full name of the lead"
+            },
+            {
+              "name": "email",
+              "description": "The email address of the lead"
+            },
+            {
+              "name": "phone",
+              "description": "The phone number of the lead"
+            },
+            {
+              "name": "notes",
+              "description": "A summary of the user's requirements based on the chat history"
+            }
+          ]
+        }
+      },
+      "id": "record-lead-tool",
+      "name": "Record Lead AI Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1000, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $input.first().json.output ?? $input.first().json.text ?? $input.first().json.response ?? '';\n\nreturn [{\n  json: {\n    response: agentOutput,\n    timestamp: new Date().toISOString(),\n    success: true\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response",
+      "name": "Send Reply to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1160, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": false, \"response\": \"I'm having trouble processing your request. Please try again.\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "error-response",
+      "name": "Send Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [700, 150]
+    }
+  ],
+  "connections": {
+    "Webhook (Receive Chat Request)": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Lead AI Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Send Reply to Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "meta": {
+    "templateId": "apex-ai-chat-concierge",
+    "instanceId": "apex-builders"
+  },
+  "tags": ["apex-builders", "ai-chat", "concierge"]
+}

@@ -23,7 +23,7 @@ export default function AdminLayout({
           </header>
 
           <main className="h-full p-4 md:p-8">
-            <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 h-full">{children}</div>
+            <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-[clamp(1rem,2vw,1.5rem)] h-full">{children}</div>
           </main>
         </SidebarInset>
       </div>

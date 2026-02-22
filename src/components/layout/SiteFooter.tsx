@@ -5,7 +5,7 @@ import { Mail, Share2 } from "lucide-react";
 export function SiteFooter() {
   return (
     <footer className="w-full px-4 md:px-8 pb-8 flex justify-center relative z-20">
-      <div className="w-full max-w-5xl rounded-[2.5rem] bg-slate-lighter border border-white/5 overflow-hidden relative shadow-2xl">
+      <div className="w-full max-w-6xl rounded-[2.5rem] bg-slate-lighter border border-white/5 overflow-hidden relative shadow-2xl">
         {/* Decorative gradient splash */}
         <div className="absolute top-0 right-0 w-2/3 h-full bg-linear-to-l from-violet-900/20 to-transparent pointer-events-none"></div>
 

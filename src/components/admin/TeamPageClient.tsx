@@ -18,7 +18,7 @@ export default function AdminTeamPageClient({ technicians }: { technicians: Awai
   const onLeave = technicians.filter((t) => t.on_leave).length;
 
   return (
-    <div className="grow px-6 lg:px-12 py-10 max-w-[1600px] mx-auto w-full">
+    <div className="grow px-[clamp(1.25rem,4vw,3rem)] py-[clamp(1.5rem,4vw,2.5rem)] max-w-[1600px] mx-auto w-full min-w-0">
       <PageHeader title="Team Management" subtitle="Oversee assignments, status, and team availability.">
         <PillButton variant="secondary" icon="add" className="w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
           Add Member
@@ -26,21 +26,21 @@ export default function AdminTeamPageClient({ technicians }: { technicians: Awai
       </PageHeader>
 
       {/* Summary bar */}
-      <div className="flex flex-wrap items-center gap-6 mb-10">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-wrap items-center gap-[clamp(1rem,3vw,1.5rem)] mb-10">
+        <div className="flex flex-wrap items-center gap-[clamp(1rem,3vw,1.5rem)]">
           <div>
-            <p className="text-2xl font-black text-white">{technicians.length}</p>
-            <p className="text-xs text-slate-500 font-medium">Total Techs</p>
+            <p className="text-[clamp(1.5rem,3vw,2rem)] font-black text-white">{technicians.length}</p>
+            <p className="text-xs text-slate-500 font-medium whitespace-nowrap">Total Techs</p>
           </div>
           <div className="h-8 w-px bg-white/10" />
           <div>
-            <p className="text-2xl font-black text-emerald-400">{active}</p>
-            <p className="text-xs text-slate-500 font-medium">Active</p>
+            <p className="text-[clamp(1.5rem,3vw,2rem)] font-black text-emerald-400">{active}</p>
+            <p className="text-xs text-slate-500 font-medium whitespace-nowrap">Active</p>
           </div>
           <div className="h-8 w-px bg-white/10" />
           <div>
-            <p className="text-2xl font-black text-slate-400">{onLeave}</p>
-            <p className="text-xs text-slate-500 font-medium">On Leave</p>
+            <p className="text-[clamp(1.5rem,3vw,2rem)] font-black text-slate-400">{onLeave}</p>
+            <p className="text-xs text-slate-500 font-medium whitespace-nowrap">On Leave</p>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function AdminTeamPageClient({ technicians }: { technicians: Awai
           <p className="text-sm mt-1">Add team members via the button above.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[clamp(1.25rem,4vw,2rem)]">
           {technicians.map((member) => {
             const isOnLeave = member.on_leave;
             const isActive = member.is_active && !isOnLeave;

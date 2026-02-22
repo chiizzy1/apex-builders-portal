@@ -27,7 +27,7 @@ export default async function AdminReportsPage() {
     n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `$${(n / 1_000).toFixed(0)}K` : `$${n}`;
 
   return (
-    <div className="flex-1 w-full max-w-[1400px] mx-auto p-6 md:p-8 flex flex-col gap-8 relative">
+    <div className="flex-1 w-full max-w-[1400px] mx-auto p-[clamp(1.25rem,4vw,2rem)] flex flex-col gap-8 relative min-w-0">
       {/* Ambient Glow Backgrounds */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#0df2f2]/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#a855f7]/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
@@ -47,7 +47,7 @@ export default async function AdminReportsPage() {
       </PageHeader>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[clamp(1.25rem,4vw,2rem)]">
         {/* Card 1: Revenue */}
         <FloatingCard padding="default" className="group shadow-[0_10px_30px_-5px_rgba(0,0,0,0.5)]">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -62,7 +62,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Total Revenue</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">{fmtRevenue(totalRevenue)}</h3>
+          <h3 className="text-[clamp(1.75rem,4vw,2.5rem)] font-black text-white tracking-tight">{fmtRevenue(totalRevenue)}</h3>
         </FloatingCard>
 
         {/* Card 2: Active Projects */}
@@ -79,7 +79,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Active Projects</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">{activeProjects}</h3>
+          <h3 className="text-[clamp(1.75rem,4vw,2.5rem)] font-black text-white tracking-tight">{activeProjects}</h3>
         </FloatingCard>
 
         {/* Card 3: Completed */}
@@ -96,7 +96,7 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Completed Jobs</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">{completedCount}</h3>
+          <h3 className="text-[clamp(1.75rem,4vw,2.5rem)] font-black text-white tracking-tight">{completedCount}</h3>
         </FloatingCard>
 
         {/* Card 4: Utilization */}
@@ -113,12 +113,12 @@ export default async function AdminReportsPage() {
             </span>
           </div>
           <p className="text-slate-400 font-medium mb-1">Utilization Rate</p>
-          <h3 className="text-3xl font-black text-white tracking-tight">{utilizationRate}%</h3>
+          <h3 className="text-[clamp(1.75rem,4vw,2.5rem)] font-black text-white tracking-tight">{utilizationRate}%</h3>
         </FloatingCard>
       </div>
 
       {/* Main Charts Section */}
-      <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[420px]">
+      <div className="flex flex-col lg:flex-row gap-[clamp(1.25rem,4vw,2rem)] h-auto lg:h-[420px]">
         {/* Left: Revenue Over Time */}
         <FloatingCard
           padding="large"

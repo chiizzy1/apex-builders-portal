@@ -9,17 +9,17 @@ export function Hero() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <>
-      <section className="max-w-6xl w-full flex flex-col items-center text-center gap-8 mb-24 relative z-10 pt-32">
+      <section className="max-w-6xl w-full flex flex-col items-center text-center gap-8 mb-24 relative z-10 pt-32 px-4 md:px-8">
         {/* Hero Text */}
         <div className="flex flex-col items-center gap-6 max-w-4xl relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-primary uppercase tracking-wider mb-2 animate-pulse">
             <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#f27c0d]"></span>
             v2.0 Now Available
           </div>
-          <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight bg-clip-text text-transparent bg-linear-to-b from-white to-gray-400 drop-shadow-sm">
-            Run Your Construction <br className="hidden md:block" /> Business From{" "}
+          <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-balance bg-clip-text text-transparent bg-linear-to-b from-white to-gray-400 drop-shadow-sm">
+            Command your field <br className="hidden md:block" /> business from{" "}
             <span className="text-white relative inline-block">
-              One Place
+              one dashboard
               <svg
                 className="absolute w-full h-3 -bottom-1 left-0 text-primary opacity-80"
                 fill="none"
@@ -35,9 +35,9 @@ export function Hero() {
               </svg>
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-400 max-w-2xl leading-relaxed">
-            The all-in-one OS for modern builders. Track assets, manage field teams, and automate reporting with enterprise-grade
-            precision.
+          <p className="text-lg md:text-xl text-balance text-gray-400 max-w-2xl leading-relaxed">
+            The premium operations portal for construction and home service pros. Track technicians, automate client updates, and
+            invoice faster so you stop losing jobs to chaos.
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-4">
             <Button variant="default" size="lg" className="group" onClick={() => setIsModalOpen(true)}>

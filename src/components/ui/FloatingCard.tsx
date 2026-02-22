@@ -12,13 +12,13 @@ export function FloatingCard({ children, className, variant = "interactive", pad
     <div
       className={cn(
         // Base styling for the premium card
-        "bg-[#21242D] border border-[#2D313A] rounded-[2rem] relative overflow-hidden",
+        "bg-[#21242D] border border-[#2D313A] rounded-[2rem] relative overflow-hidden min-w-0",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
 
-        // Padding variants
+        // Padding variants (Fluid)
         padding === "none" && "p-0",
-        padding === "default" && "p-6",
-        padding === "large" && "p-8",
+        padding === "default" && "p-[clamp(1.25rem,4vw,1.5rem)]",
+        padding === "large" && "p-[clamp(1.5rem,5vw,2rem)]",
 
         // Interactive styling (hover effects)
         variant === "interactive" &&

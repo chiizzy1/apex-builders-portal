@@ -1,0 +1,16 @@
+<svg
+  viewBox="0 0 100 100"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path d="M30 80 L50 20 L60 20 L40 80 Z" fill="#ffffff" />
+  <path d="M50 20 L70 80 L55 80 L40 35 Z" fill="url(#primaryGradient)" />
+  <rect x="35" y="55" width="25" height="12" transform="skewX(-15)" fill="#ffffff" />
+
+  <defs>
+    <linearGradient id="primaryGradient" x1="50" y1="20" x2="70" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stopColor="#0df2f2" />
+      <stop offset="1" stopColor="#f97316" />
+    </linearGradient>
+  </defs>
+</svg>
